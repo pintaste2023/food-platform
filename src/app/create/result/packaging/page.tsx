@@ -72,6 +72,8 @@ function PackagingDesignContent() {
   const [packagingForm, setPackagingForm] = useState('');
   const [budgetRange, setBudgetRange] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
+  const [brandPositioning, setBrandPositioning] = useState('');
+  const [preferredStyle, setPreferredStyle] = useState('');
 
   // API state
   const [loading, setLoading] = useState(false);
@@ -80,6 +82,19 @@ function PackagingDesignContent() {
 
   // Load from sessionStorage
   useEffect(() => {
+    // Get brand inputs from previous step
+    const brandInputs = sessionStorage.getItem('brandInputs');
+    if (brandInputs) {
+      try {
+        const inputs = JSON.parse(brandInputs);
+        setTargetAudience(inputs.targetAudience || '');
+        setBrandPositioning(inputs.brandPositioning || '');
+        setPreferredStyle(inputs.preferredStyle || '');
+      } catch (e) {
+        console.error('Failed to parse brand inputs', e);
+      }
+    }
+
     // Get brand name from naming result
     const namingResult = sessionStorage.getItem('namingResult');
     if (namingResult) {
@@ -239,12 +254,25 @@ function PackagingDesignContent() {
           ]}
         />
 
-        <BrandInputField
-          label="目標客群"
-          value={targetAudience}
-          onChange={setTargetAudience}
-          placeholder="例如：忙碌上班族、健身族群"
-        />
+        {/* 目標客群 - 從品牌命名頁帶入，不可修改 */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            目標客群
+            <span className="text-xs text-gray-400 ml-2">（從品牌命名頁帶入）</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={targetAudience}
+              readOnly
+              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600"
+              placeholder="從品牌命名頁帶入"
+            />
+            <span className="text-xs text-orange-500 whitespace-nowrap">
+              如需更改請回到上一步
+            </span>
+          </div>
+        </div>
 
         <button
           onClick={handleGenerate}

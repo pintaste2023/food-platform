@@ -9,6 +9,11 @@ interface User {
   email: string;
   avatar?: string;
   level: number;
+  personalLogo?: {
+    brandName: string;
+    logoData: any;
+    createdAt: string;
+  } | null;
 }
 
 interface AuthContextType {
@@ -16,6 +21,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  savePersonalLogo: (logoData: any) => void;
   isLoading: boolean;
 }
 
@@ -43,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: '測試用戶',
         email: email,
         level: 1,
+        personalLogo: null,
       };
       setUser(mockUser);
       localStorage.setItem('food-platform-user', JSON.stringify(mockUser));
@@ -56,8 +63,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('food-platform-user');
   };
 
+  const savePersonalLogo = (logoData: any) => {
+    if (user) {
+      const updatedUser = {
+        ...user,
+        personalLogo: {
+          brandName: logoData.brandName || '個人品牌',
+          logoData: logoData,
+          createdAt: new Date().toISOString(),
+        },
+      };
+      setUser(updatedUser);
+      localStorage.setItem('food-platform-user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, logout, savePersonalLogo, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

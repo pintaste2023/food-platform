@@ -360,10 +360,67 @@ function RecipeContent() {
                 請教 AI 怎麼調整配方
               </h3>
               <div className="space-y-4">
+                {/* 快速建議提示 */}
+                <div className="bg-white/80 rounded-xl p-3">
+                  <p className="text-sm text-gray-600 mb-3">💡 不知道要問什麼？點擊下方建議快速提問：</p>
+                  
+                  {/* 成本相關 */}
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-gray-500 mb-2">💰 成本評估</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['如何降低生產成本？', '原料可以替換嗎？', '保存期限能延長嗎？'].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => setChatMessage(suggestion)}
+                          disabled={aiLoading}
+                          className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 transition-colors disabled:opacity-50"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 風味相關 */}
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-gray-500 mb-2">👅 風味調整</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['如何讓味道更濃郁？', '可以更甜一點嗎？', '減少辣度怎麼做？'].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => setChatMessage(suggestion)}
+                          disabled={aiLoading}
+                          className="text-xs px-2 py-1 bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200 transition-colors disabled:opacity-50"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 健康相關 */}
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-gray-500 mb-2">🥗 健康取向</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['如何減少熱量？', '能夠無糖嗎？', '如何增加蛋白質？'].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => setChatMessage(suggestion)}
+                          disabled={aiLoading}
+                          className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors disabled:opacity-50"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  </div>
+
                 <textarea
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
-                  placeholder="例如：如何讓成本更低？如何讓風味更濃郁？如何更健康？"
+                  placeholder="或許你想要...（輸入你的問題）"
                   className="w-full h-20 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:outline-none resize-none"
                 />
                 <button
@@ -469,6 +526,15 @@ function RecipeContent() {
                 </div>
               )}
 
+              {/* 必選成分警告 */}
+              {requiredWeight === 0 && (
+                <div className="p-3 rounded-xl mb-4 bg-red-50 border border-red-200">
+                  <p className="text-sm font-medium text-red-600">
+                    ⚠️ 請至少選擇一個必選成分
+                  </p>
+                </div>
+              )}
+
               {/* 成分狀態 */}
               <div className="space-y-3 mb-6">
                 <div className={`flex items-center justify-between p-3 rounded-xl ${mainWeight > 0 ? 'bg-green-50' : 'bg-gray-50'}`}>
@@ -547,10 +613,14 @@ function RecipeContent() {
             <div className="space-y-3">
               <button 
                 onClick={() => router.push('/create/result/brand')}
-                disabled={totalWeight !== 10}
-                className={`btn-primary w-full text-lg py-4 ${totalWeight !== 10 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={totalWeight !== 10 || requiredWeight === 0}
+                className={`btn-primary w-full text-lg py-4 ${(totalWeight !== 10 || requiredWeight === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {totalWeight === 10 ? '👉 確認配方並開始品牌設計' : totalWeight > 10 ? '⚠️ 總重量已超過 10g' : '⚠️ 總重量未達 10g'}
+                {totalWeight === 10 && requiredWeight > 0 
+                  ? '👉 確認配方並開始品牌設計' 
+                  : totalWeight !== 10 
+                    ? (totalWeight > 10 ? '⚠️ 總重量已超過 10g' : '⚠️ 總重量未達 10g')
+                    : '⚠️ 請選擇必選成分'}
               </button>
               <button 
                 onClick={() => router.push('/create')}

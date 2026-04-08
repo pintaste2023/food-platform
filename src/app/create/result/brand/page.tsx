@@ -9,6 +9,7 @@ import Link from 'next/link';
 import BrandWizardLayout, { 
   BrandInputField, 
   BrandSelect,
+  BrandSelectWithOther,
   LoadingState, 
   ErrorState 
 } from '@/components/brand-wizard/BrandWizardLayout';
@@ -88,6 +89,18 @@ function BrandNamingContent() {
       setError('請輸入產品名稱');
       return;
     }
+    if (!targetAudience) {
+      setError('請選擇目標客群');
+      return;
+    }
+    if (!brandPositioning) {
+      setError('請選擇產品定位');
+      return;
+    }
+    if (!preferredStyle) {
+      setError('請選擇偏好風格');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -111,6 +124,16 @@ function BrandNamingContent() {
       if (data.success) {
         setResult(data.data);
         sessionStorage.setItem('namingResult', JSON.stringify(data.data));
+        
+        // Save brand inputs for use in subsequent steps
+        const brandInputs = {
+          targetAudience: targetAudience,
+          brandPositioning: brandPositioning,
+          preferredStyle: preferredStyle,
+          productType: productType,
+          productFeatures: productFeatures,
+        };
+        sessionStorage.setItem('brandInputs', JSON.stringify(brandInputs));
       } else {
         setError(data.error || '生成失敗');
       }
@@ -171,21 +194,41 @@ function BrandNamingContent() {
           placeholder="例如：高纖維、低糖、天然食材"
         />
 
-        <BrandInputField
+        <BrandSelectWithOther
           label="目標客群"
           value={targetAudience}
           onChange={setTargetAudience}
-          placeholder="例如：忙碌上班族、健身族群"
+          options={[
+            { value: '', label: '請選擇目標客群' },
+            { value: '忙碌上班族', label: '忙碌上班族' },
+            { value: '健身族群', label: '健身族群' },
+            { value: '學生族群', label: '學生族群' },
+            { value: '家庭煮婦/夫', label: '家庭煮婦/夫' },
+            { value: '銀髮族', label: '銀髮族' },
+            { value: '愛美人士', label: '愛美人士' },
+            { value: '環保意識者', label: '環保意識者' },
+          ]}
+          otherPlaceholder="例如：減肥族群、創業者"
         />
 
-        <BrandInputField
-          label="品牌定位"
+        <BrandSelectWithOther
+          label="產品定位"
           value={brandPositioning}
           onChange={setBrandPositioning}
-          placeholder="你想傳達的品牌形象"
+          options={[
+            { value: '', label: '請選擇產品定位' },
+            { value: '健康取向', label: '健康取向' },
+            { value: '美味優先', label: '美味優先' },
+            { value: '方便快速', label: '方便快速' },
+            { value: '高端品質', label: '高端品質' },
+            { value: '平價實惠', label: '平價實惠' },
+            { value: '天然有機', label: '天然有機' },
+            { value: '在地特色', label: '在地特色' },
+          ]}
+          otherPlaceholder="例如：網紅美食、派對點心"
         />
 
-        <BrandSelect
+        <BrandSelectWithOther
           label="偏好風格"
           value={preferredStyle}
           onChange={setPreferredStyle}
@@ -196,13 +239,16 @@ function BrandNamingContent() {
             { value: '自然', label: '自然清新' },
             { value: '時尚', label: '時尚潮流' },
             { value: '溫馨', label: '溫馨居家' },
+            { value: '復古', label: '復古經典' },
+            { value: '極簡', label: '極簡設計' },
           ]}
+          otherPlaceholder="例如：文青風、工業風"
         />
 
         <button
           onClick={handleGenerate}
-          disabled={loading || !productType}
-          className={`btn-primary w-full mt-4 ${loading ? 'opacity-50' : ''}`}
+          disabled={loading || !productType || !targetAudience || !brandPositioning || !preferredStyle}
+          className={`btn-primary w-full mt-4 ${(loading || !productType || !targetAudience || !brandPositioning || !preferredStyle) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {loading ? '🤔 AI 思考中...' : '✨ 產生品牌名稱'}
         </button>

@@ -248,6 +248,74 @@ export function BrandSelect({
   );
 }
 
+// Dropdown with "其他" option that reveals custom input field
+export function BrandSelectWithOther({ 
+  label, 
+  value, 
+  onChange, 
+  options,
+  otherPlaceholder = '請輸入自訂內容'
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (value: string) => void; 
+  options: { value: string; label: string }[];
+  otherPlaceholder?: string;
+}) {
+  const [customValue, setCustomValue] = useState('');
+  
+  // Check if "其他" is selected
+  const isOther = value === '其他';
+  
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = e.target.value;
+    onChange(selected);
+    // Clear custom value when switching away from "其他"
+    if (selected !== '其他') {
+      setCustomValue('');
+    }
+  };
+  
+  const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const custom = e.target.value;
+    setCustomValue(custom);
+    // Update the main value to the custom input
+    onChange(custom);
+  };
+  
+  return (
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+      <select
+        value={isOther ? '其他' : value}
+        onChange={handleSelectChange}
+        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors bg-white mb-2"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+        <option value="其他">其他（請自訂）</option>
+      </select>
+      
+      {/* Custom input appears when "其他" is selected */}
+      {isOther && (
+        <input
+          type="text"
+          value={customValue}
+          onChange={handleCustomChange}
+          placeholder={otherPlaceholder}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:outline-none transition-colors"
+          autoFocus
+        />
+      )}
+    </div>
+  );
+}
+
 export function BrandTagInput({ 
   label, 
   tags, 

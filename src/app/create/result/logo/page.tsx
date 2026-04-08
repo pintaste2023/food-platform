@@ -5,9 +5,11 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import BrandWizardLayout, { 
   BrandInputField, 
   BrandSelect,
+  BrandSelectWithOther,
   LoadingState, 
   ErrorState 
 } from '@/components/brand-wizard/BrandWizardLayout';
@@ -42,8 +44,11 @@ const STEP_TITLES = ['品牌命名', 'Logo 設計', '品牌故事', '包裝設�
 function LogoDesignContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, savePersonalLogo, isLoading: authLoading } = useAuth();
   
   // Form state
+  const [hasExistingLogo, setHasExistingLogo] = useState<boolean | null>(null);
+  const [useExistingLogo, setUseExistingLogo] = useState(false);
   const [brandName, setBrandName] = useState('');
   const [productType, setProductType] = useState('');
   const [brandPositioning, setBrandPositioning] = useState('');
@@ -57,6 +62,19 @@ function LogoDesignContent() {
 
   // Load from sessionStorage
   useEffect(() => {
+    // Wait for auth to load
+    if (authLoading) return;
+
+    console.log('User:', user);
+    console.log('Personal logo:', user?.personalLogo);
+
+    // Check if user already has a personal logo
+    if (user?.personalLogo && Object.keys(user.personalLogo).length > 0) {
+      setHasExistingLogo(true);
+    } else {
+      setHasExistingLogo(false);
+    }
+
     // Get brand name from naming result
     const namingResult = sessionStorage.getItem('namingResult');
     if (namingResult) {
@@ -101,11 +119,23 @@ function LogoDesignContent() {
         console.error('Failed to parse logo result', e);
       }
     }
-  }, []);
+  }, [user, authLoading]);
 
   const handleGenerate = async () => {
     if (!brandName) {
       setError('請輸入品牌名稱');
+      return;
+    }
+    if (!brandPositioning) {
+      setError('請選擇品牌定位');
+      return;
+    }
+    if (!targetAudience) {
+      setError('請選擇目標客群');
+      return;
+    }
+    if (!preferredStyle) {
+      setError('請選擇偏好風格');
       return;
     }
 
@@ -131,6 +161,12 @@ function LogoDesignContent() {
       if (data.success) {
         setResult(data.data);
         sessionStorage.setItem('logoResult', JSON.stringify(data.data));
+        
+        // Save to user's personal logo
+        savePersonalLogo({
+          brandName: brandName,
+          ...data.data,
+        });
       } else {
         setError(data.error || '生成失敗');
       }
@@ -142,7 +178,12 @@ function LogoDesignContent() {
   };
 
   const handleNext = () => {
-    if (result) {
+    // Must have result in these cases:
+    // - No existing logo (must create one)
+    // - Has existing logo but chooses to create new (must create new)
+    const mustHaveResult = hasExistingLogo === false || (hasExistingLogo === true && useExistingLogo === false);
+    
+    if (!mustHaveResult || result) {
       router.push('/create/result/story');
     }
   };
@@ -158,7 +199,11 @@ function LogoDesignContent() {
       stepTitles={STEP_TITLES}
       onNext={handleNext}
       onBack={handleBack}
-      canProceed={!!result}
+      canProceed={
+        hasExistingLogo === false && !!result ||  // Must create new logo
+        hasExistingLogo === true && useExistingLogo === true ||  // Can reuse existing
+        hasExistingLogo === true && useExistingLogo === false && !!result  // Must create new
+      }
       nextLabel="下一步：品牌故事"
     >
       {/* Page Title */}
@@ -172,60 +217,154 @@ function LogoDesignContent() {
         </p>
       </div>
 
-      {/* Form */}
+{/* Form */}
       <div className="card mb-6 animate-fade-in-up">
-        <h3 className="font-bold text-gray-800 mb-4">Logo 設計資訊</h3>
-        
-        <BrandInputField
-          label="品牌名稱"
-          value={brandName}
-          onChange={setBrandName}
-          placeholder="你的品牌叫什麼？"
-          required
-        />
+        {/* 檢查是否有現有 Logo */}
+        {hasExistingLogo === true && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+            <p className="font-bold text-gray-800 mb-3">🎯 你已經有一個個人品牌 Logo 了！</p>
+            <p className="text-sm text-gray-600 mb-4">
+              你在 <strong>{user?.personalLogo?.createdAt}</strong> 設計了 <strong>{user?.personalLogo?.brandName}</strong> 的 Logo
+            </p>
+            
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="logoChoice"
+                  checked={!useExistingLogo}
+                  onChange={() => setUseExistingLogo(false)}
+                  className="w-5 h-5 accent-orange-500"
+                />
+                <span className="text-gray-700">產生一個新的 Logo（這次設計新的）</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="logoChoice"
+                  checked={useExistingLogo}
+                  onChange={() => setUseExistingLogo(true)}
+                  className="w-5 h-5 accent-orange-500"
+                />
+                <span className="text-gray-700">沿用之前的 Logo（直接使用之前的設計）</span>
+              </label>
+            </div>
+          </div>
+        )}
 
-        <BrandInputField
-          label="產品類型"
-          value={productType}
-          onChange={setProductType}
-          placeholder="例如：即食咖哩、健康零食"
-        />
+        {/* 如果選擇沿用之前的 Logo */}
+        {hasExistingLogo === true && useExistingLogo && (
+          <div className="mb-6 text-center py-8 bg-green-50 rounded-xl">
+            <div className="text-5xl mb-4">✅</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">沿用個人品牌 Logo</h3>
+            <p className="text-gray-600 mb-4">
+              你即將使用 <strong>{user?.personalLogo?.brandName}</strong> 的 Logo
+            </p>
+            <button
+              onClick={() => {
+                if (user?.personalLogo?.logoData) {
+                  setResult(user.personalLogo.logoData);
+                  sessionStorage.setItem('logoResult', JSON.stringify(user.personalLogo.logoData));
+                }
+              }}
+              className="btn-primary"
+            >
+              確認使用 →
+            </button>
+          </div>
+        )}
 
-        <BrandInputField
-          label="品牌定位"
-          value={brandPositioning}
-          onChange={setBrandPositioning}
-          placeholder="你想傳達的品牌形象"
-        />
+        {/* 如果選擇產生新的 Logo 或沒有現有 Logo */}
+        {hasExistingLogo !== null && (
+          <>
+            {hasExistingLogo === true && !useExistingLogo && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
+                <h3 className="font-bold text-gray-800 mb-4">🎨 設計個人品牌 Logo</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  這是你的個人品牌 Logo，將來會用在所有產品包裝上
+                </p>
+              </div>
+            )}
+            {hasExistingLogo === false && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
+                <h3 className="font-bold text-gray-800 mb-4">🎨 設計個人品牌 Logo</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  這是你的第一款產品，現在讓我們為你建立個人品牌 Logo
+                </p>
+              </div>
+            )}
+            
+            <BrandInputField
+              label="品牌名稱"
+              value={brandName}
+              onChange={setBrandName}
+              placeholder="你的品牌叫什麼？"
+              required
+            />
 
-        <BrandInputField
-          label="目標客群"
-          value={targetAudience}
-          onChange={setTargetAudience}
-          placeholder="例如：忙碌上班族、健身族群"
-        />
+            <BrandInputField
+              label="產品類型"
+              value={productType}
+              onChange={setProductType}
+              placeholder="例如：即食咖哩、健康零食"
+            />
 
-        <BrandSelect
-          label="偏好風格"
-          value={preferredStyle}
-          onChange={setPreferredStyle}
-          options={[
-            { value: '', label: '請選擇風格' },
-            { value: '簡約', label: '簡約現代' },
-            { value: '手繪', label: '手繪溫馨' },
-            { value: '幾何', label: '幾何時尚' },
-            { value: '復古', label: '復古經典' },
-            { value: '自然', label: '自然清新' },
-          ]}
-        />
+            <BrandSelectWithOther
+              label="品牌定位"
+              value={brandPositioning}
+              onChange={setBrandPositioning}
+              options={[
+                { value: '', label: '請選擇品牌定位' },
+                { value: '健康取向', label: '健康取向' },
+                { value: '美味優先', label: '美味優先' },
+                { value: '方便快速', label: '方便快速' },
+                { value: '高端品質', label: '高端品質' },
+                { value: '平價實惠', label: '平價實惠' },
+                { value: '天然有機', label: '天然有機' },
+              ]}
+              otherPlaceholder="例如：網紅美食、派對點心"
+            />
 
-        <button
-          onClick={handleGenerate}
-          disabled={loading || !brandName}
-          className={`btn-primary w-full mt-4 ${loading ? 'opacity-50' : ''}`}
-        >
-          {loading ? '🤔 AI 設計中...' : '✨ 產生 Logo 設計'}
-        </button>
+            <BrandSelectWithOther
+              label="目標客群"
+              value={targetAudience}
+              onChange={setTargetAudience}
+              options={[
+                { value: '', label: '請選擇目標客群' },
+                { value: '忙碌上班族', label: '忙碌上班族' },
+                { value: '健身族群', label: '健身族群' },
+                { value: '學生族群', label: '學生族群' },
+                { value: '家庭煮婦/夫', label: '家庭煮婦/夫' },
+                { value: '銀髮族', label: '銀髮族' },
+                { value: '愛美人士', label: '愛美人士' },
+                { value: '環保意識者', label: '環保意識者' },
+              ]}
+              otherPlaceholder="例如：減肥族群、創業者"
+            />
+
+            <BrandSelect
+              label="偏好風格"
+              value={preferredStyle}
+              onChange={setPreferredStyle}
+              options={[
+                { value: '', label: '請選擇風格' },
+                { value: '簡約', label: '簡約現代' },
+                { value: '手繪', label: '手繪溫馨' },
+                { value: '幾何', label: '幾何時尚' },
+                { value: '復古', label: '復古經典' },
+                { value: '自然', label: '自然清新' },
+              ]}
+            />
+
+            <button
+              onClick={handleGenerate}
+              disabled={loading || !brandName || !brandPositioning || !targetAudience || !preferredStyle}
+              className={`btn-primary w-full mt-4 ${(loading || !brandName || !brandPositioning || !targetAudience || !preferredStyle) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {loading ? '🤔 AI 設計中...' : '✨ 產生 Logo 設計'}
+            </button>
+          </>
+        )}
       </div>
 
       {/* Error */}

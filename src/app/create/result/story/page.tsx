@@ -46,6 +46,11 @@ function BrandStoryContent() {
   const [productFeatures, setProductFeatures] = useState('');
   const [brandPositioning, setBrandPositioning] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
+  
+  // 個人感想狀態
+  const [personalStory, setPersonalStory] = useState('');
+  const [aiRefining, setAiRefining] = useState(false);
+  const [aiRefinedStory, setAiRefinedStory] = useState('');
 
   // API state
   const [loading, setLoading] = useState(false);
@@ -54,6 +59,18 @@ function BrandStoryContent() {
 
   // Load from sessionStorage
   useEffect(() => {
+    // Get brand inputs from previous step
+    const brandInputs = sessionStorage.getItem('brandInputs');
+    if (brandInputs) {
+      try {
+        const inputs = JSON.parse(brandInputs);
+        setTargetAudience(inputs.targetAudience || '');
+        setBrandPositioning(inputs.brandPositioning || '');
+      } catch (e) {
+        console.error('Failed to parse brand inputs', e);
+      }
+    }
+
     // Get brand name from naming result
     const namingResult = sessionStorage.getItem('namingResult');
     if (namingResult) {
@@ -154,6 +171,35 @@ function BrandStoryContent() {
     navigator.clipboard.writeText(text);
   };
 
+  // AI 調整個人感想
+  const handleRefinePersonalStory = async () => {
+    if (!personalStory.trim()) return;
+    
+    setAiRefining(true);
+    try {
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'story-refine',
+          personalStory: personalStory,
+          brandName: brandName,
+          targetAudience: targetAudience,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setAiRefinedStory(data.data.refined_story || data.data);
+      }
+    } catch (err) {
+      console.error('AI 調整失敗:', err);
+    } finally {
+      setAiRefining(false);
+    }
+  };
+
   return (
     <BrandWizardLayout
       currentStep={3}
@@ -209,12 +255,101 @@ function BrandStoryContent() {
           placeholder="你想傳達的品牌形象"
         />
 
-        <BrandInputField
-          label="目標客群"
-          value={targetAudience}
-          onChange={setTargetAudience}
-          placeholder="例如：忙碌上班族、健身族群"
-        />
+        {/* 目標客群 - 從品牌命名頁帶入，不可修改 */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            目標客群
+            <span className="text-xs text-gray-400 ml-2">（從品牌命名頁帶入）</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={targetAudience}
+              readOnly
+              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600"
+              placeholder="從品牌命名頁帶入"
+            />
+            <span className="text-xs text-orange-500 whitespace-nowrap">
+              如需更改請回到上一步
+            </span>
+          </div>
+        </div>
+
+        {/* 個人感想區塊 */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <span className="text-xl">💭</span>
+            或者，寫下你的個人感想
+          </h4>
+          <p className="text-sm text-gray-500 mb-3">
+            寫下你對品牌的想法，讓 AI 幫你調整成更專業的品牌故事
+          </p>
+          
+          <div className="space-y-3">
+            <textarea
+              value={personalStory}
+              onChange={(e) => setPersonalStory(e.target.value)}
+              placeholder="例如：我創立這個品牌是因為想要把媽媽的廚房味道分享給更多人..."
+              className="w-full h-24 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:outline-none resize-none"
+            />
+            
+            <button
+              onClick={handleRefinePersonalStory}
+              disabled={aiRefining || !personalStory.trim()}
+              className={`btn-secondary w-full ${aiRefining ? 'opacity-50' : ''}`}
+            >
+              {aiRefining ? '🤔 AI 調整中...' : '✨ 讓 AI 幫我調整'}
+            </button>
+
+            {/* AI 調整後的結果 */}
+            {aiRefinedStory && (
+              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-purple-600 font-medium">✨ AI 調整後的品牌故事</span>
+                  <button
+                    onClick={() => copyToClipboard(aiRefinedStory)}
+                    className="text-xs text-purple-500 hover:text-purple-700"
+                  >
+                    📋 複製
+                  </button>
+                </div>
+                <p className="text-gray-700 whitespace-pre-line mb-3">{aiRefinedStory}</p>
+                <button
+                  onClick={() => {
+                    // Create a result object from the AI refined story
+                    const customResult = {
+                      brand_story: {
+                        headline: brandName,
+                        story: aiRefinedStory,
+                        mission: '傳遞溫暖與美味',
+                        values: ['用心', '分享', '品質'],
+                        tone_of_voice: '溫馨真誠',
+                      },
+                      story_variants: {
+                        short: aiRefinedStory.substring(0, 100),
+                        medium: aiRefinedStory,
+                        long: aiRefinedStory,
+                      },
+                      key_messages: [],
+                      storytelling_elements: {
+                        hero: brandName,
+                        conflict: '尋找健康的美味選擇',
+                        resolution: '提供天然健康的食品',
+                        call_to_action: '嘗試我們的產品',
+                      },
+                      content_tips: '',
+                    };
+                    setResult(customResult);
+                    sessionStorage.setItem('storyResult', JSON.stringify(customResult));
+                  }}
+                  className="btn-primary w-full"
+                >
+                  使用這個故事 →
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         <button
           onClick={handleGenerate}
