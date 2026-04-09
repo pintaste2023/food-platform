@@ -41,7 +41,7 @@ function BrandNamingContent() {
   // Form state
   const [productType, setProductType] = useState('');
   const [productFeatures, setProductFeatures] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
+  const [targetAudience, setTargetAudience] = useState<string[]>([]);
   const [brandPositioning, setBrandPositioning] = useState('');
   const [preferredStyle, setPreferredStyle] = useState('');
 
@@ -49,8 +49,9 @@ function BrandNamingContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<NamingResult | null>(null);
+  const [selectedName, setSelectedName] = useState<string>('');
 
-  // Load from sessionStorage
+  // Load from sessionStorage - only pre-fill form fields, NOT results
   useEffect(() => {
     const stored = sessionStorage.getItem('recipeResult');
     if (stored) {
@@ -72,16 +73,8 @@ function BrandNamingContent() {
         console.error('Failed to parse positioning', e);
       }
     }
-
-    // Load existing result if any
-    const namingResult = sessionStorage.getItem('namingResult');
-    if (namingResult) {
-      try {
-        setResult(JSON.parse(namingResult));
-      } catch (e) {
-        console.error('Failed to parse naming result', e);
-      }
-    }
+    // NOTE: Do NOT auto-load namingResult from sessionStorage
+    // User must fill form and click "產生品牌名稱" to see results
   }, []);
 
   const handleGenerate = async () => {
@@ -89,8 +82,8 @@ function BrandNamingContent() {
       setError('請輸入產品名稱');
       return;
     }
-    if (!targetAudience) {
-      setError('請選擇目標客群');
+    if (targetAudience.length === 0) {
+      setError('請至少選擇一個目標客群');
       return;
     }
     if (!brandPositioning) {
@@ -113,7 +106,7 @@ function BrandNamingContent() {
           type: 'naming',
           productIdea: productType,
           currentRecipe: { description: productFeatures },
-          targetAudience: targetAudience || '一般消費者',
+          targetAudience: targetAudience.length > 0 ? targetAudience.join('、') : '一般消費者',
           styleTags: [preferredStyle],
           positioning: { positioning_statement: brandPositioning },
         }),
@@ -145,7 +138,9 @@ function BrandNamingContent() {
   };
 
   const handleNext = () => {
-    if (result) {
+    if (result && selectedName) {
+      // Save selected brand name to sessionStorage for next steps
+      sessionStorage.setItem('selectedBrandName', selectedName);
       router.push('/create/result/logo');
     }
   };
@@ -161,8 +156,8 @@ function BrandNamingContent() {
       stepTitles={STEP_TITLES}
       onNext={handleNext}
       onBack={handleBack}
-      canProceed={!!result}
-      nextLabel="下一步：Logo 設計"
+      canProceed={!!result && !!selectedName}
+      nextLabel={selectedName ? `下一步：Logo 設計` : '請選擇一個名稱'}
     >
       {/* Page Title */}
       <div className="text-center mb-8 animate-fade-in-up">
@@ -194,22 +189,49 @@ function BrandNamingContent() {
           placeholder="例如：高纖維、低糖、天然食材"
         />
 
-        <BrandSelectWithOther
-          label="目標客群"
-          value={targetAudience}
-          onChange={setTargetAudience}
-          options={[
-            { value: '', label: '請選擇目標客群' },
-            { value: '忙碌上班族', label: '忙碌上班族' },
-            { value: '健身族群', label: '健身族群' },
-            { value: '學生族群', label: '學生族群' },
-            { value: '家庭煮婦/夫', label: '家庭煮婦/夫' },
-            { value: '銀髮族', label: '銀髮族' },
-            { value: '愛美人士', label: '愛美人士' },
-            { value: '環保意識者', label: '環保意識者' },
-          ]}
-          otherPlaceholder="例如：減肥族群、創業者"
-        />
+        {/* 目標客群 - 複選 */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            目標客群（可多選）
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: '忙碌上班族', label: '忙碌上班族' },
+              { value: '健身族群', label: '健身族群' },
+              { value: '學生族群', label: '學生族群' },
+              { value: '家庭煮婦/夫', label: '家庭煮婦/夫' },
+              { value: '銀髮族', label: '銀髮族' },
+              { value: '愛美人士', label: '愛美人士' },
+              { value: '環保意識者', label: '環保意識者' },
+              { value: '減肥族群', label: '減肥族群' },
+              { value: '親子族群', label: '親子族群' },
+              { value: '創業人士', label: '創業人士' },
+            ].map((option) => (
+              <label
+                key={option.value}
+                className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-colors ${
+                  targetAudience.includes(option.value)
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 hover:border-orange-300'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={targetAudience.includes(option.value)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setTargetAudience([...targetAudience, option.value]);
+                    } else {
+                      setTargetAudience(targetAudience.filter((t) => t !== option.value));
+                    }
+                  }}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <span className="text-sm text-gray-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
 
         <BrandSelectWithOther
           label="產品定位"
@@ -247,8 +269,8 @@ function BrandNamingContent() {
 
         <button
           onClick={handleGenerate}
-          disabled={loading || !productType || !targetAudience || !brandPositioning || !preferredStyle}
-          className={`btn-primary w-full mt-4 ${(loading || !productType || !targetAudience || !brandPositioning || !preferredStyle) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={loading || !productType || targetAudience.length === 0 || !brandPositioning || !preferredStyle}
+          className={`btn-primary w-full mt-4 ${(loading || !productType || targetAudience.length === 0 || !brandPositioning || !preferredStyle) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {loading ? '🤔 AI 思考中...' : '✨ 產生品牌名稱'}
         </button>
@@ -273,7 +295,15 @@ function BrandNamingContent() {
             
             <div className="space-y-4">
               {result.brand_names?.map((brand, idx) => (
-                <div key={idx} className="bg-white rounded-xl p-4 border-2 border-purple-100 hover:border-purple-300 transition-colors">
+                <div 
+                  key={idx} 
+                  onClick={() => setSelectedName(brand.name)}
+                  className={`bg-white rounded-xl p-4 border-2 cursor-pointer transition-colors ${
+                    selectedName === brand.name 
+                      ? 'border-orange-500 bg-orange-50' 
+                      : 'border-purple-100 hover:border-purple-300'
+                  }`}
+                >
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="text-xl font-bold text-gray-800">{brand.name}</h4>
                     <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-sm">
@@ -290,6 +320,11 @@ function BrandNamingContent() {
                       適合：{brand.suitable_for}
                     </span>
                   </div>
+                  {selectedName === brand.name && (
+                    <div className="mt-3 text-orange-600 font-medium text-sm">
+                      ✓ 已選擇
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

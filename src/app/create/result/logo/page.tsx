@@ -50,10 +50,11 @@ function LogoDesignContent() {
   const [hasExistingLogo, setHasExistingLogo] = useState<boolean | null>(null);
   const [useExistingLogo, setUseExistingLogo] = useState(false);
   const [brandName, setBrandName] = useState('');
-  const [productType, setProductType] = useState('');
   const [brandPositioning, setBrandPositioning] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
   const [preferredStyle, setPreferredStyle] = useState('');
+  const [colorPreference, setColorPreference] = useState('');
+  const [fontStyle, setFontStyle] = useState('');
 
   // API state
   const [loading, setLoading] = useState(false);
@@ -88,14 +89,21 @@ function LogoDesignContent() {
       }
     }
 
-    // Get product type from recipe
-    const recipe = sessionStorage.getItem('recipeResult');
-    if (recipe) {
+    // Get brand inputs from previous step
+    const brandInputs = sessionStorage.getItem('brandInputs');
+    if (brandInputs) {
       try {
-        const data = JSON.parse(recipe);
-        setProductType(data.recipe_name || '');
+        const inputs = JSON.parse(brandInputs);
+        // targetAudience is now an array from brand naming step - convert to first value or empty string
+        if (inputs.targetAudience) {
+          const audiences = Array.isArray(inputs.targetAudience) ? inputs.targetAudience : [inputs.targetAudience];
+          setTargetAudience(audiences[0] || '');
+        }
+        if (inputs.preferredStyle) {
+          setPreferredStyle(inputs.preferredStyle);
+        }
       } catch (e) {
-        console.error('Failed to parse recipe', e);
+        console.error('Failed to parse brand inputs', e);
       }
     }
 
@@ -109,25 +117,17 @@ function LogoDesignContent() {
         console.error('Failed to parse positioning', e);
       }
     }
-
-    // Load existing result
-    const logoResult = sessionStorage.getItem('logoResult');
-    if (logoResult) {
-      try {
-        setResult(JSON.parse(logoResult));
-      } catch (e) {
-        console.error('Failed to parse logo result', e);
-      }
-    }
+    // NOTE: Do NOT auto-load logoResult from sessionStorage
+    // User must fill form and click "產生 Logo 設計" to see results
   }, [user, authLoading]);
 
   const handleGenerate = async () => {
     if (!brandName) {
-      setError('請輸入品牌名稱');
+      setError('請輸入 Logo 名稱');
       return;
     }
     if (!brandPositioning) {
-      setError('請選擇品牌定位');
+      setError('請選擇 Logo 定位');
       return;
     }
     if (!targetAudience) {
@@ -136,6 +136,14 @@ function LogoDesignContent() {
     }
     if (!preferredStyle) {
       setError('請選擇偏好風格');
+      return;
+    }
+    if (!colorPreference) {
+      setError('請選擇顏色偏好');
+      return;
+    }
+    if (!fontStyle) {
+      setError('請選擇字體傾向');
       return;
     }
 
@@ -149,10 +157,11 @@ function LogoDesignContent() {
         body: JSON.stringify({
           type: 'logo',
           brandName: brandName,
-          productIdea: productType,
           currentRecipe: { positioning_statement: brandPositioning },
           targetAudience: targetAudience || '一般消費者',
           styleTags: [preferredStyle],
+          colorPreference: colorPreference,
+          fontStyle: fontStyle,
         }),
       });
 
@@ -210,10 +219,10 @@ function LogoDesignContent() {
       <div className="text-center mb-8 animate-fade-in-up">
         <div className="text-5xl mb-4">🎨</div>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          設計你的品牌 Logo
+          設計你的個人 Logo
         </h1>
         <p className="text-gray-500">
-          讓 AI 為你產生专业的 Logo 設計建議
+          讓 AI 為你產生專業的 Logo 設計建議
         </p>
       </div>
 
@@ -279,42 +288,35 @@ function LogoDesignContent() {
           <>
             {hasExistingLogo === true && !useExistingLogo && (
               <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
-                <h3 className="font-bold text-gray-800 mb-4">🎨 設計個人品牌 Logo</h3>
+                <h3 className="font-bold text-gray-800 mb-4">🎨 設計個人 Logo</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  這是你的個人品牌 Logo，將來會用在所有產品包裝上
+                  這是你的個人 Logo，將來會用在所有產品包裝上
                 </p>
               </div>
             )}
             {hasExistingLogo === false && (
               <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
-                <h3 className="font-bold text-gray-800 mb-4">🎨 設計個人品牌 Logo</h3>
+                <h3 className="font-bold text-gray-800 mb-4">🎨 設計個人 Logo</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  這是你的第一款產品，現在讓我們為你建立個人品牌 Logo
+                  這是你的第一款產品，現在讓我們為你建立個人 Logo
                 </p>
               </div>
             )}
             
             <BrandInputField
-              label="品牌名稱"
+              label="Logo名稱"
               value={brandName}
               onChange={setBrandName}
-              placeholder="你的品牌叫什麼？"
+              placeholder="你的 Logo 叫什麼？"
               required
             />
 
-            <BrandInputField
-              label="產品類型"
-              value={productType}
-              onChange={setProductType}
-              placeholder="例如：即食咖哩、健康零食"
-            />
-
             <BrandSelectWithOther
-              label="品牌定位"
+              label="Logo定位"
               value={brandPositioning}
               onChange={setBrandPositioning}
               options={[
-                { value: '', label: '請選擇品牌定位' },
+                { value: '', label: '請選擇 Logo 定位' },
                 { value: '健康取向', label: '健康取向' },
                 { value: '美味優先', label: '美味優先' },
                 { value: '方便快速', label: '方便快速' },
@@ -343,23 +345,39 @@ function LogoDesignContent() {
             />
 
             <BrandSelect
-              label="偏好風格"
-              value={preferredStyle}
-              onChange={setPreferredStyle}
+              label="顏色偏好"
+              value={colorPreference}
+              onChange={setColorPreference}
               options={[
-                { value: '', label: '請選擇風格' },
-                { value: '簡約', label: '簡約現代' },
-                { value: '手繪', label: '手繪溫馨' },
-                { value: '幾何', label: '幾何時尚' },
-                { value: '復古', label: '復古經典' },
-                { value: '自然', label: '自然清新' },
+                { value: '', label: '請選擇顏色偏好' },
+                { value: '黑白極簡', label: '黑白極簡' },
+                { value: '暖色系', label: '暖色系（紅 / 橘 / 黃）' },
+                { value: '冷色系', label: '冷色系（藍 / 綠）' },
+                { value: '莫蘭迪', label: '莫蘭迪（低飽和）' },
+                { value: '高對比', label: '高對比（吸睛）' },
+                { value: '自然色', label: '自然色（大地色）' },
+              ]}
+            />
+
+            <BrandSelect
+              label="字體傾向"
+              value={fontStyle}
+              onChange={setFontStyle}
+              options={[
+                { value: '', label: '請選擇字體傾向' },
+                { value: '無襯線', label: '無襯線（現代）' },
+                { value: '襯線', label: '襯線（高級）' },
+                { value: '手寫', label: '手寫（溫度）' },
+                { value: '幾何', label: '幾何（科技）' },
+                { value: '粗體', label: '粗體（強烈）' },
+                { value: '細體', label: '細體（優雅）' },
               ]}
             />
 
             <button
               onClick={handleGenerate}
-              disabled={loading || !brandName || !brandPositioning || !targetAudience || !preferredStyle}
-              className={`btn-primary w-full mt-4 ${(loading || !brandName || !brandPositioning || !targetAudience || !preferredStyle) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={loading || !brandName || !brandPositioning || !targetAudience || !preferredStyle || !colorPreference || !fontStyle}
+              className={`btn-primary w-full mt-4 ${(loading || !brandName || !brandPositioning || !targetAudience || !preferredStyle || !colorPreference || !fontStyle) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {loading ? '🤔 AI 設計中...' : '✨ 產生 Logo 設計'}
             </button>

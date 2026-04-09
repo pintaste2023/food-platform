@@ -3,13 +3,43 @@
 
 import { mockData } from '@/data/mockData';
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import StoryCarousel from '@/components/StoryCarousel';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function PostLoginHomepage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const { currentStage, setUserStage, advanceStage } = useAuth();
   const [shareVersion, setShareVersion] = useState<'pain' | 'result'>('pain');
+  const [selectedProduct, setSelectedProduct] = useState<typeof mockData.products[0] | null>(null);
+  // Route-based auto-update (listen to route changes)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const path = (pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '/')).toLowerCase();
+    const earningsThisMonth = (typeof (window as any).__mockEarningsThisMonth !== 'undefined')
+      ? (window as any).__mockEarningsThisMonth
+      : 0;
+    let targetStage: number | null = null;
+    if (typeof earningsThisMonth === 'number' && earningsThisMonth > 0) {
+      targetStage = 5;
+    } else if (path.startsWith('/create/result')) {
+      targetStage = 3;
+    } else if (path.startsWith('/create')) {
+      targetStage = 2;
+    } else if (path.startsWith('/home') || (typeof (window as any).__hasPublishedProducts !== 'undefined' && (window as any).__hasPublishedProducts)) {
+      targetStage = 4;
+    }
+    if (targetStage != null && targetStage !== currentStage) {
+      if (typeof setUserStage === 'function') {
+        setUserStage(targetStage);
+      } else if (typeof advanceStage === 'function') {
+        const delta = targetStage - (currentStage ?? 0);
+        for (let i = 0; i < delta; i++) advanceStage();
+      }
+    }
+  }, [pathname, currentStage, setUserStage, advanceStage]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -20,6 +50,7 @@ export default function PostLoginHomepage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* New Creator Start */}
         <NewCreatorStart />
+        <StoryCarousel currentStage={currentStage} />
 
         {/* Live Ticker */}
         <LiveTickerSection data={mockData.liveTicker} />
@@ -44,7 +75,7 @@ function Header() {
 
   const handleLogout = () => {
     logout();
-    router.push('/');
+    window.location.href = '/';
   };
 
   return (
@@ -95,7 +126,7 @@ function NewCreatorStart() {
           </div>
         </div>
         <button 
-          onClick={() => router.push('/create')}
+          onClick={() => window.location.href = '/create'}
           className="btn-primary"
         >
           做我的第一個商品
@@ -321,33 +352,124 @@ function UpgradeTriggerCard() {
 
 // Product Cards
 function ProductCards() {
+  const [selectedProduct, setSelectedProduct] = useState<typeof mockData.products[0] | null>(null);
+  
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-bold text-gray-800">🛒 熱門商品</h2>
-      {mockData.products.map((product) => (
-        <div key={product.id} className="card flex items-center gap-4">
-          <div className="text-4xl">{product.image}</div>
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-800">{product.name}</h3>
-            <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-              <span className="text-orange-500">🔥 已賣 {product.sales}單</span>
-              <span className="text-green-600">💰 你可賺 NT${product.earnings}</span>
-              <span>已有 {product.sharers} 人正在分享</span>
+    <>
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-gray-800">🛒 熱門商品</h2>
+        {mockData.products.map((product) => (
+          <div 
+            key={product.id} 
+            className="card flex items-center gap-4 cursor-pointer hover:scale-[1.02] transition-transform duration-200"
+            onClick={() => setSelectedProduct(product)}
+          >
+            <div className="text-4xl">{product.image}</div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-800">{product.name}</h3>
+              <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                <span className="text-orange-500">🔥 已賣 {product.sales}單</span>
+                <span className="text-green-600">💰 你可賺 NT${product.earnings}</span>
+                <span>已有 {product.sharers} 人正在分享</span>
+              </div>
+              <div className="flex gap-2 mt-2">
+                {product.tags.map((tag) => (
+                  <span key={tag} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2 mt-2">
+            <div className="flex flex-col gap-2">
+              <button className="btn-primary text-sm py-2">一鍵分享</button>
+              <button className="btn-secondary text-sm py-2">購買</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {/* Product Modal */}
+      {selectedProduct && (
+        <ProductModal 
+          product={selectedProduct} 
+          onClose={() => setSelectedProduct(null)} 
+        />
+      )}
+    </>
+  );
+}
+
+// Product Modal Component
+function ProductModal({ product, onClose }: { product: typeof mockData.products[0]; onClose: () => void }) {
+  return (
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200"
+        >
+          ✕
+        </button>
+
+        {/* Product Image */}
+        <div className="bg-gradient-to-br from-orange-100 to-yellow-100 p-8 text-center">
+          <div className="text-6xl mb-4">{product.image}</div>
+        </div>
+
+        {/* Product Info */}
+        <div className="p-6">
+          {/* Brand Info */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-2xl">
+              {product.brandLogo}
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800">{product.brandName}</h3>
+              <p className="text-gray-500 text-sm">{product.name}</p>
+            </div>
+          </div>
+
+          {/* Brand Story */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-4">
+            <h4 className="font-semibold text-gray-800 mb-2">📖 品牌故事</h4>
+            <p className="text-gray-600 text-sm">{product.brandStory}</p>
+          </div>
+
+          {/* Price and Tags */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex gap-2">
               {product.tags.map((tag) => (
-                <span key={tag} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                <span key={tag} className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full">
                   {tag}
                 </span>
               ))}
             </div>
+            <div className="text-right">
+              <p className="text-gray-400 text-sm">價格</p>
+              <p className="text-2xl font-bold text-orange-500">NT${product.price}</p>
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <button className="btn-primary text-sm py-2">一鍵分享</button>
-            <button className="btn-secondary text-sm py-2">購買</button>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button className="flex-1 btn-primary py-3 flex items-center justify-center gap-2">
+              <span>🛒</span>
+              <span>放入購物車</span>
+            </button>
+            <button className="flex-1 btn-secondary py-3 flex items-center justify-center gap-2">
+              <span>📤</span>
+              <span>一鍵分享</span>
+            </button>
           </div>
         </div>
-      ))}
+      </div>
     </div>
   );
 }

@@ -26,7 +26,7 @@ function LoginContent() {
     try {
       const success = await login(email, password);
       if (success) {
-        router.push(redirectTo);
+        window.location.href = redirectTo;
       } else {
         setError('登入失敗，請檢查帳號密碼');
       }
@@ -39,7 +39,7 @@ function LoginContent() {
 
   const handleLogout = () => {
     logout();
-    router.push('/');
+    window.location.href = '/';
   };
 
   return (

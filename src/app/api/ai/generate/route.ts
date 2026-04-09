@@ -218,7 +218,14 @@ function generateMockBrandNaming(productType: string, productFeatures: string) {
 /**
  * Mock Logo 設計數據
  */
-function generateMockLogoDesign(brandName: string) {
+function generateMockLogoDesign(
+  brandName: string, 
+  brandPositioning: string = '', 
+  targetAudience: string = '', 
+  preferredStyle: string = '',
+  colorPreference: string = '',
+  fontStyle: string = ''
+) {
   return {
     logo_concepts: [
       {
@@ -462,18 +469,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === 'logo') {
-      if (!brandName || !productIdea) {
+      if (!brandName) {
         return NextResponse.json(
-          { error: '請提供品牌名稱（brandName）和產品類型（productIdea）' },
+          { error: '請提供 Logo 名稱（brandName）' },
           { status: 400 }
         );
       }
       return await generateLogoDesign({
         brandName: brandName,
-        productType: productIdea,
         brandPositioning: currentRecipe?.positioning_statement || '',
         targetAudience: targetAudience || '一般消費者',
         preferredStyle: styleTags?.[0] || '',
+        colorPreference: body.colorPreference || '',
+        fontStyle: body.fontStyle || '',
       });
     }
 
@@ -810,17 +818,18 @@ async function generateBrandNaming(params: {
  */
 async function generateLogoDesign(params: {
   brandName: string;
-  productType: string;
   brandPositioning: string;
   targetAudience: string;
   preferredStyle: string;
+  colorPreference?: string;
+  fontStyle?: string;
 }) {
-  const { brandName, productType, brandPositioning, targetAudience, preferredStyle } = params;
+  const { brandName, brandPositioning, targetAudience, preferredStyle, colorPreference, fontStyle } = params;
 
   // Mock 模式
   if (USE_MOCK) {
     await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY));
-    const mockData = generateMockLogoDesign(brandName);
+    const mockData = generateMockLogoDesign(brandName, brandPositioning, targetAudience, preferredStyle, colorPreference, fontStyle);
     return NextResponse.json({
       success: true,
       data: mockData,
@@ -833,10 +842,11 @@ async function generateLogoDesign(params: {
   try {
     const prompt = LOGO_DESIGN_PROMPT
       .replace('{brandName}', brandName)
-      .replace('{productType}', productType)
       .replace('{brandPositioning}', brandPositioning || '（未提供）')
       .replace('{targetAudience}', targetAudience)
-      .replace('{preferredStyle}', preferredStyle || '（未提供）');
+      .replace('{preferredStyle}', preferredStyle || '（未提供）')
+      .replace('{colorPreference}', colorPreference || '（未提供）')
+      .replace('{fontStyle}', fontStyle || '（未提供）');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

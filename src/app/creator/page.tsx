@@ -6,10 +6,117 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
+// 五階段定義
+const STAGES = [
+  { id: 1, icon: '💭', label: '想法' },
+  { id: 2, icon: '🤖', label: '生成配方' },
+  { id: 3, icon: '🏭', label: '試做' },
+  { id: 4, icon: '📱', label: '發布商品' },
+  { id: 5, icon: '💰', label: '賺錢' },
+];
+
+// 模擬進行中的商品數據
+const inProgressProducts = [
+  { id: 1, name: '低卡咖哩粉', currentStage: 3, createdAt: '2026-04-01', lastActiveAt: '2026-04-07' },
+  { id: 2, name: '燕麥能量棒', currentStage: 2, createdAt: '2026-04-05', lastActiveAt: '2026-04-06' },
+];
+
+// InProgressTab 組件
+function InProgressTab() {
+  const router = useRouter();
+
+  if (inProgressProducts.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-5xl mb-4">📦</div>
+        <h3 className="text-lg font-bold text-gray-800 mb-2">目前沒有進行中的商品</h3>
+        <p className="text-gray-500 mb-6">建立你的第一個商品來開始創作之旅</p>
+        <Link href="/create" className="btn-primary">
+          建立新商品
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-bold text-gray-800 mb-4">🚧 進行中的商品</h3>
+      {inProgressProducts.map((product) => (
+        <ProductProgressCard key={product.id} product={product} onContinue={() => router.push('/create')} />
+      ))}
+      <Link href="/create" className="block text-center py-4 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-orange-300 hover:text-orange-500 transition-colors">
+        + 建立新商品
+      </Link>
+    </div>
+  );
+}
+
+// 商品進度卡片組件
+function ProductProgressCard({ product, onContinue }: { product: { id: number; name: string; currentStage: number; createdAt: string; lastActiveAt: string }; onContinue: () => void }) {
+  const currentStage = Math.min(5, Math.max(1, product.currentStage));
+  const progressPercent = ((currentStage - 1) / 4) * 100;
+  const currentStageInfo = STAGES.find(s => s.id === currentStage) || STAGES[0];
+
+  return (
+    <div className="p-4 bg-gray-50 rounded-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-orange-200 rounded-xl flex items-center justify-center text-xl">
+            🍛
+          </div>
+          <div>
+            <p className="font-medium text-gray-800">{product.name}</p>
+            <p className="text-gray-400 text-xs">建立於 {product.createdAt}</p>
+          </div>
+        </div>
+        <button onClick={onContinue} className="text-orange-500 text-sm font-medium hover:underline">
+          繼續 →
+        </button>
+      </div>
+
+      {/* 進度條 */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-sm text-gray-600">
+            {currentStageInfo.icon} {currentStageInfo.label}
+          </span>
+          <span className="text-sm text-gray-400">{Math.round(progressPercent)}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-orange-400 to-red-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {/* 階段指示器 */}
+      <div className="flex items-center justify-between">
+        {STAGES.map((stage, index) => (
+          <div key={stage.id} className="flex flex-col items-center">
+            <div 
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                stage.id <= currentStage 
+                  ? 'bg-orange-500 text-white' 
+                  : 'bg-gray-200 text-gray-400'
+              }`}
+            >
+              {stage.id < currentStage ? '✓' : stage.id}
+            </div>
+            <span className={`text-xs mt-1 ${stage.id <= currentStage ? 'text-orange-600' : 'text-gray-400'}`}>
+              {stage.icon}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function CreatorProfilePage() {
   const { user, isLoggedIn, isLoading } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'earnings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'earnings' | 'in-progress'>('overview');
 
   // 檢查登入狀態
   useEffect(() => {
@@ -139,6 +246,16 @@ export default function CreatorProfilePage() {
             }`}
           >
             收益
+          </button>
+          <button
+            onClick={() => setActiveTab('in-progress')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${
+              activeTab === 'in-progress' 
+                ? 'bg-orange-500 text-white' 
+                : 'bg-white text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            進行中
           </button>
         </div>
 
@@ -275,6 +392,10 @@ export default function CreatorProfilePage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'in-progress' && (
+            <InProgressTab />
           )}
         </div>
       </main>

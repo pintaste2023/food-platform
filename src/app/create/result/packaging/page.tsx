@@ -95,17 +95,10 @@ function PackagingDesignContent() {
       }
     }
 
-    // Get brand name from naming result
-    const namingResult = sessionStorage.getItem('namingResult');
-    if (namingResult) {
-      try {
-        const data = JSON.parse(namingResult);
-        if (data.brand_names && data.brand_names.length > 0) {
-          setBrandName(data.brand_names[0].name);
-        }
-      } catch (e) {
-        console.error('Failed to parse naming result', e);
-      }
+    // Get selected brand name from naming step (user must have selected one to reach this page)
+    const savedBrandName = sessionStorage.getItem('selectedBrandName');
+    if (savedBrandName) {
+      setBrandName(savedBrandName);
     }
 
     // Get product info from recipe
@@ -119,16 +112,8 @@ function PackagingDesignContent() {
         console.error('Failed to parse recipe', e);
       }
     }
-
-    // Load existing result
-    const packagingResult = sessionStorage.getItem('packagingResult');
-    if (packagingResult) {
-      try {
-        setResult(JSON.parse(packagingResult));
-      } catch (e) {
-        console.error('Failed to parse packaging result', e);
-      }
-    }
+    // NOTE: Do NOT auto-load packagingResult from sessionStorage
+    // User must fill form and click "產生包裝設計" to see results
   }, []);
 
   const handleGenerate = async () => {
@@ -149,7 +134,9 @@ function PackagingDesignContent() {
           brandName: brandName,
           productIdea: productType,
           currentRecipe: { description: productFeatures },
-          targetAudience: targetAudience || '一般消費者',
+          targetAudience: Array.isArray(targetAudience) && targetAudience.length > 0 
+            ? targetAudience.join('、') 
+            : (targetAudience || '一般消費者'),
           styleTags: [packagingForm],
           budgetRange: budgetRange,
         }),
@@ -206,13 +193,25 @@ function PackagingDesignContent() {
       <div className="card mb-6 animate-fade-in-up">
         <h3 className="font-bold text-gray-800 mb-4">包裝設計資訊</h3>
         
-        <BrandInputField
-          label="品牌名稱"
-          value={brandName}
-          onChange={setBrandName}
-          placeholder="你的品牌叫什麼？"
-          required
-        />
+        {/* 品牌名稱 - 從品牌命名頁帶入，不可修改 */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            品牌名稱
+            <span className="text-xs text-gray-400 ml-2">（從品牌命名頁帶入）</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={brandName}
+              readOnly
+              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600"
+              placeholder="從品牌命名頁帶入"
+            />
+            <span className="text-xs text-orange-500 whitespace-nowrap">
+              如需更改請回到上一步
+            </span>
+          </div>
+        </div>
 
         <BrandInputField
           label="產品類型"
@@ -263,7 +262,7 @@ function PackagingDesignContent() {
           <div className="flex items-center gap-2">
             <input
               type="text"
-              value={targetAudience}
+              value={Array.isArray(targetAudience) ? targetAudience.join('、') : targetAudience}
               readOnly
               className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600"
               placeholder="從品牌命名頁帶入"

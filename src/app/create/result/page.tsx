@@ -298,7 +298,7 @@ function ResultPageContent() {
               }}
               className="btn-primary flex-1 text-lg py-4 text-center"
             >
-              👉 看詳細配方
+              👉 調整配方
             </button>
             <button
               onClick={() => router.push('/create')}

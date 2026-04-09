@@ -19,11 +19,12 @@ export const LOGO_DESIGN_PROMPT = `
 - 以「好 Logo 讓人一眼就記住」「讓我們幫你的品牌做個好看的門面」的口吻鼓勵用戶
 
 ## 用戶輸入
-- 品牌名稱：{brandName}
-- 產品類型：{productType}
-- 品牌定位：{brandPositioning}
+- Logo名稱：{brandName}
+- Logo定位：{brandPositioning}
 - 目標客群：{targetAudience}
 - 偏好風格：{preferredStyle}
+- 顏色偏好：{colorPreference}
+- 字體傾向：{fontStyle}
 
 ## 輸出要求
 
