@@ -14,19 +14,16 @@ const StoryCarousel: React.FC<Props> = ({ currentStage }) => {
   ];
 
   return (
-    <section className="mb-6">
-      <div className="flex gap-4 overflow-x-auto py-2">
+    <section className="mb-3">
+      <div className="flex gap-2 overflow-x-auto py-1">
         {items.map((item) => (
           <div
             key={item.id}
-            className={`min-w-[140px] p-4 rounded-lg border ${currentStage === item.id ? 'border-orange-500 bg-yellow-50' : 'border-gray-200 bg-white'}`}
+            className={`min-w-[100px] px-3 py-1.5 rounded-md text-xs border ${currentStage === item.id ? 'border-orange-500 bg-yellow-50' : 'border-gray-200 bg-white'}`}
           >
-            <div className={`text-sm font-semibold ${currentStage === item.id ? 'text-orange-700' : 'text-gray-700'}`}>
+            <div className={`font-medium ${currentStage === item.id ? 'text-orange-700' : 'text-gray-600'}`}>
               {item.label}
             </div>
-            {currentStage === item.id && (
-              <div className="mt-2 text-xs text-orange-600">Current</div>
-            )}
           </div>
         ))}
       </div>

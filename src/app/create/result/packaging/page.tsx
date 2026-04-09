@@ -275,11 +275,22 @@ function PackagingDesignContent() {
 
         <button
           onClick={handleGenerate}
-          disabled={loading || !brandName}
-          className={`btn-primary w-full mt-4 ${loading ? 'opacity-50' : ''}`}
+          disabled={loading || !brandName || !packagingForm || !budgetRange}
+          className={`btn-primary w-full mt-4 ${
+            (!brandName || !packagingForm || !budgetRange || loading) 
+              ? 'opacity-50 cursor-not-allowed' 
+              : ''
+          }`}
         >
           {loading ? '🤔 AI 設計中...' : '✨ 產生包裝設計'}
         </button>
+        
+        {/* 提示訊息 */}
+        {(!packagingForm || !budgetRange) && (
+          <p className="text-center text-xs text-gray-400 mt-2">
+            請先選擇包裝形式和預算範圍
+          </p>
+        )}
       </div>
 
       {/* Error */}

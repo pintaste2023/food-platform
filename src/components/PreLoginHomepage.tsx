@@ -107,6 +107,9 @@ export default function PreLoginHomepage() {
       {/* Product Carousel */}
       <ProductCarousel products={mockData.products} />
 
+      {/* Wish Pool - 敲碗許願池 */}
+      <WishPool demands={mockData.demandCards} />
+
       {/* Social Proof */}
       <SocialProof cases={mockData.socialProof} />
 
@@ -516,6 +519,106 @@ function ProductModal({ product, onClose }: { product: typeof mockData.products[
         </div>
       </div>
     </div>
+  );
+}
+
+// Wish Pool Component - 敲碗許願池
+function WishPool({ demands }: { demands: typeof mockData.demandCards }) {
+  const { isLoggedIn } = useAuth();
+  const router = useRouter();
+
+  const handleVote = () => {
+    if (!isLoggedIn) {
+      router.push('/login?redirect=/create');
+    } else {
+      router.push('/create');
+    }
+  };
+
+  return (
+    <section className="py-16 px-4 bg-gradient-to-b from-orange-50 to-yellow-50">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="text-4xl mb-3">🥣</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            敲碗許願池
+          </h2>
+          <p className="text-gray-500">
+            大家最想要的產品，等你來實現！
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {demands.map((item) => (
+            <div 
+              key={item.id}
+              className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              onClick={handleVote}
+            >
+              {/* Category Tag */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="px-3 py-1 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                  {item.category}
+                </span>
+                <span className="text-green-500 text-sm font-medium flex items-center gap-1">
+                  ↑ {item.recentGrowth}%
+                </span>
+              </div>
+
+              {/* Demand */}
+              <h3 className="text-lg font-bold text-gray-800 mb-3">
+                {item.demand}
+              </h3>
+
+              {/* Stats */}
+              <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                <span className="flex items-center gap-1">
+                  <span>👍</span> {item.votes} 人敲碗
+                </span>
+                <span className="flex items-center gap-1">
+                  <span>👨‍🍳</span> {item.developers} 人開發中
+                </span>
+              </div>
+
+              {/* AI Analysis (if available) */}
+              {item.aiAnalysis && (
+                <div className="bg-purple-50 rounded-xl p-4">
+                  <p className="text-xs font-medium text-purple-700 mb-2">🤖 AI 分析建議</p>
+                  <p className="text-sm text-gray-600">
+                    {item.aiAnalysis.recommended}
+                  </p>
+                  {item.aiAnalysis.suggestion && (
+                    <div className="mt-2 flex gap-2">
+                      <span className="text-xs bg-white px-2 py-1 rounded text-gray-600">
+                        💰 {item.aiAnalysis.suggestion.price}
+                      </span>
+                      <span className="text-xs bg-white px-2 py-1 rounded text-gray-600">
+                        🍯 {item.aiAnalysis.suggestion.flavor}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CTA */}
+              <button className="w-full mt-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors">
+                我來做！ →
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* View All Link */}
+        <div className="text-center mt-8">
+          <button 
+            onClick={handleVote}
+            className="text-orange-600 font-medium hover:underline"
+          >
+            查看更多許願 →
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 

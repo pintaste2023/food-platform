@@ -6,6 +6,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STEPS = [
   { title: '品牌命名', icon: '✨', path: '/create/result/brand' },
@@ -15,12 +16,16 @@ const STEPS = [
 ];
 
 function SummaryContent() {
+  const router = useRouter();
+  const { saveDraftProject, isLoggedIn } = useAuth();
   const [results, setResults] = useState<{
     naming?: any;
     logo?: any;
     story?: any;
     packaging?: any;
   }>({});
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
     // Load all results from sessionStorage
@@ -38,6 +43,34 @@ function SummaryContent() {
   }, []);
 
   const hasAnyResult = results.naming || results.logo || results.story || results.packaging;
+
+  // 儲存草稿
+  const handleSaveDraft = () => {
+    if (!isLoggedIn) {
+      setSaveMessage('請先登入才能儲存');
+      return;
+    }
+
+    setSaving(true);
+    
+    // 取得產品名稱
+    const brandName = results.naming?.brand_names?.[0]?.name || '未命名產品';
+    
+    // 儲存到個人資料
+    saveDraftProject({
+      name: brandName,
+      naming: results.naming,
+      logo: results.logo,
+      story: results.story,
+      packaging: results.packaging,
+    });
+
+    setTimeout(() => {
+      setSaving(false);
+      setSaveMessage('✅ 已儲存到進行中');
+      setTimeout(() => setSaveMessage(''), 3000);
+    }, 500);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
@@ -220,13 +253,27 @@ function SummaryContent() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <Link href="/create" className="btn-primary flex-1 text-center">
-                🔄 開始新產品
+              <Link href="/create/result/try" className="btn-primary flex-1 text-center">
+                🔨 試作
               </Link>
+              <button 
+                onClick={handleSaveDraft}
+                disabled={saving}
+                className="btn-secondary flex-1 text-center"
+              >
+                {saving ? '儲存中...' : '💾 暫存'}
+              </button>
               <Link href="/" className="btn-secondary flex-1 text-center">
                 🏠 回首頁
               </Link>
             </div>
+
+            {/* Save Message */}
+            {saveMessage && (
+              <div className="text-center mt-3 text-green-600 font-medium">
+                {saveMessage}
+              </div>
+            )}
 
             {/* Tips */}
             <div className="card bg-gradient-to-r from-blue-50 to-cyan-50 mt-8">

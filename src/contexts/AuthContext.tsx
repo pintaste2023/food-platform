@@ -12,6 +12,22 @@ export enum Stage {
   STAGE_EARN = 5,      // 💰 賺錢
 }
 
+interface DraftProject {
+  id: string;
+  name: string;
+  status: 'draft' | 'completed';
+  createdAt: string;
+  updatedAt: string;
+  // 品牌設計資料
+  naming?: any;
+  logo?: any;
+  story?: any;
+  packaging?: any;
+  // 配方資料
+  recipe?: any;
+  positioning?: any;
+}
+
 interface User {
   id: string;
   name: string;
@@ -23,6 +39,8 @@ interface User {
     logoData: any;
     createdAt: string;
   } | null;
+  // 進行中的專案（暫存）
+  draftProjects?: DraftProject[];
 }
 
 interface AuthContextType {
@@ -31,6 +49,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   savePersonalLogo: (logoData: any) => void;
+  saveDraftProject: (projectData: any) => void;
+  getDraftProjects: () => DraftProject[];
+  deleteDraftProject: (projectId: string) => void;
   isLoading: boolean;
   // New stage-related properties
   currentStage: number;
@@ -139,6 +160,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // 儲存草稿專案（進行中）
+  const saveDraftProject = (projectData: any) => {
+    if (user) {
+      const now = new Date().toISOString();
+      const draftProjects = user.draftProjects || [];
+      
+      // 檢查是否已有同名稱的草稿
+      const existingIndex = draftProjects.findIndex(p => p.name === projectData.name);
+      
+      let updatedDrafts: DraftProject[];
+      if (existingIndex >= 0) {
+        // 更新現有草稿
+        updatedDrafts = [...draftProjects];
+        updatedDrafts[existingIndex] = {
+          ...updatedDrafts[existingIndex],
+          ...projectData,
+          updatedAt: now,
+        };
+      } else {
+        // 新增草稿
+        const newDraft: DraftProject = {
+          id: `draft_${Date.now()}`,
+          name: projectData.name || '未命名專案',
+          status: 'draft',
+          createdAt: now,
+          updatedAt: now,
+          ...projectData,
+        };
+        updatedDrafts = [...draftProjects, newDraft];
+      }
+      
+      const updatedUser = {
+        ...user,
+        draftProjects: updatedDrafts,
+      };
+      setUser(updatedUser);
+      localStorage.setItem('food-platform-user', JSON.stringify(updatedUser));
+    }
+  };
+
+  // 取得所有草稿專案
+  const getDraftProjects = (): DraftProject[] => {
+    return user?.draftProjects || [];
+  };
+
+  // 刪除草稿專案
+  const deleteDraftProject = (projectId: string) => {
+    if (user) {
+      const updatedDrafts = (user.draftProjects || []).filter(p => p.id !== projectId);
+      const updatedUser = {
+        ...user,
+        draftProjects: updatedDrafts,
+      };
+      setUser(updatedUser);
+      localStorage.setItem('food-platform-user', JSON.stringify(updatedUser));
+    }
+  };
+
   // Stage handling helpers
   const setUserStage = (stage: number) => {
     const clamped = Math.max(1, Math.min(5, stage));
@@ -158,6 +237,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         savePersonalLogo,
+        saveDraftProject,
+        getDraftProjects,
+        deleteDraftProject,
         isLoading,
         currentStage,
         setUserStage,
@@ -165,7 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      </AuthContext.Provider>
+    </AuthContext.Provider>
   );
 }
 

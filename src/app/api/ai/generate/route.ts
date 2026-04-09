@@ -216,7 +216,67 @@ function generateMockBrandNaming(productType: string, productFeatures: string) {
 }
 
 /**
- * Mock Logo 設計數據
+ * 根據用戶顏色偏好返回主色
+ */
+function getPrimaryColor(colorPreference: string) {
+  const colors: Record<string, { name: string; hex: string; usage: string; psychology: string }> = {
+    '黑白極簡': { name: '石墨黑', hex: '#2D3436', usage: 'Logo 主體、核心文字', psychology: '黑色代表專業、權威，是極簡風格的經典選擇' },
+    '暖色系': { name: '活力橙', hex: '#FF6B3D', usage: 'Logo 主體、呼籲行動按鈕', psychology: '橙色代表活力、熱情、食慾，是食品品牌的絕佳選擇' },
+    '冷色系': { name: '清新藍', hex: '#0984E3', usage: 'Logo 主體、信任感元素', psychology: '藍色代表信任、專業、清爽，適合健康導向的品牌' },
+    '莫蘭迪': { name: '莫蘭迪綠', hex: '#7F8C8D', usage: 'Logo 主體、柔和視覺', psychology: '低飽和色彩傳達高級感、質感，適合追求品味的品牌' },
+    '高對比': { name: '強烈紅', hex: '#E74C3C', usage: 'Logo 主體、視覺焦點', psychology: '高對比色彩立即吸引目光，適合需要強烈識別的品牌' },
+    '自然色': { name: '森林綠', hex: '#27AE60', usage: 'Logo 主體、自然元素', psychology: '大地色系傳達天然、健康、環保的理念' },
+  };
+  return colors[colorPreference] || colors['暖色系'];
+}
+
+/**
+ * 根據用戶顏色偏好返回輔色
+ */
+function getSecondaryColor(colorPreference: string) {
+  const colors: Record<string, { name: string; hex: string; usage: string; psychology: string }> = {
+    '黑白極簡': { name: '純淨白', hex: '#FFFFFF', usage: '背景、負空間', psychology: '白色代表純淨、簡潔' },
+    '暖色系': { name: '柔奶黃', hex: '#FFEAA7', usage: '輔助圖案、漸層', psychology: '柔和的暖黃色增添溫暖感' },
+    '冷色系': { name: '薄荷綠', hex: '#00B894', usage: '輔助圖案、平衡色', psychology: '綠色平衡藍色的冷靜感' },
+    '莫蘭迪': { name: '霧霾灰', hex: '#B2BEC3', usage: '輔助元素、層次', psychology: '灰色增添層次而不搶戲' },
+    '高對比': { name: '電光藍', hex: '#0984E3', usage: '對比元素、視覺張力', psychology: '強烈對比創造視覺衝擊' },
+    '自然色': { name: '大地棕', hex: '#A0522D', usage: '輔助元素、質感', psychology: '棕色代表質樸、自然' },
+  };
+  return colors[colorPreference] || colors['暖色系'];
+}
+
+/**
+ * 根據用戶顏色偏好返回強調色
+ */
+function getAccentColor(colorPreference: string) {
+  const colors: Record<string, { name: string; hex: string; usage: string; psychology: string }> = {
+    '黑白極簡': { name: '活力紅', hex: '#E74C3C', usage: '唯一強調色、視覺焦點', psychology: '在極簡中創造亮點' },
+    '暖色系': { name: '陽光金', hex: '#F39C12', usage: '強調元素、閃光效果', psychology: '金色增添高級感' },
+    '冷色系': { name: '珊瑚粉', hex: '#FD79A8', usage: '柔和強調、平衡冷色', psychology: '粉色增添溫暖平衡' },
+    '莫蘭迪': { name: '霧霾粉', hex: '#DFE6E9', usage: '低調強調、層次感', psychology: '柔和的點綴' },
+    '高對比': { name: '亮黃', hex: '#F1C40F', usage: '高光元素、 extreme contrast', psychology: '極致吸引目光' },
+    '自然色': { name: '落葉橘', hex: '#E17055', usage: '自然強調、活力感', psychology: '呼應自然主題' },
+  };
+  return colors[colorPreference] || colors['暖色系'];
+}
+
+/**
+ * 根據用戶選擇給予色彩應用建議
+ */
+function getColorTips(colorPreference: string) {
+  const tips: Record<string, string> = {
+    '黑白極簡': '💡 技巧：善用負空間，讓黑色 Logo 在白色背景上創造視覺衝擊。可加入一點紅色作為獨特的記憶點。',
+    '暖色系': '💡 技巧：暖色系特別適合食品，能刺激食慾。建議橙紅色為主調，金黃色作為點綴。',
+    '冷色系': '💡 技巧：藍色傳達信任感，適合健康保健品。但要避免過多藍色，以免降低食慾。',
+    '莫蘭迪': '💡 技巧：莫蘭迪色系適合追求質感和高級感的品牌。建議使用霧面處理提升質感。',
+    '高對比': '💡 技巧：高對比配色要注意視覺舒適度。可以用白色或淺色作為緩衝，避免過於刺眼。',
+    '自然色': '💡 技巧：大地色系傳達天然健康理念。建議使用永續紙材或環保包裝呼應品牌理念。',
+  };
+  return tips[colorPreference] || tips['暖色系'];
+}
+
+/**
+ * Mock Logo 設計數據 - 多樣化概念
  */
 function generateMockLogoDesign(
   brandName: string, 
@@ -226,62 +286,238 @@ function generateMockLogoDesign(
   colorPreference: string = '',
   fontStyle: string = ''
 ) {
+  // 根據不同條件選擇不同的 Logo 概念組合
+  const concepts = [];
+  
+  // 概念 1: 陽光田野
+  concepts.push({
+    concept_name: '🌾 陽光田野',
+    description: '以陽光和麥穗為核心視覺元素，傳達天然、健康、溫暖的品牌形象',
+    visual_elements: {
+      icon: '☀️ 陽光圖案 + 🌾 麥穗線條',
+      color_palette: [
+        { color: '暖陽橙', hex: '#FF6B3D', usage: '主色 - 傳達活力與熱情' },
+        { color: '田野綠', hex: '#4DBF69', usage: '輔色 - 代表自然與健康' },
+        { color: '陽光黃', hex: '#FFD166', usage: '強調色 - 點亮視覺焦點' },
+      ],
+      typography: {
+        font_style: '✍️ 溫暖圓潤的手寫風格',
+        recommendations: 'Google Fonts: Just Loop, Caveat, 或 yomogi',
+      },
+      layout: '📐 水平排列：Logo 在左、文字在右；垂直排列：Logo 在上、文字在下',
+    },
+    mockup_idea: '🏷️ 可以想像一個陽光形狀的圖案，中間有一束麥穗，下方放品牌名稱',
+    mood: '🌟 溫暖、活力、自然',
+    versatility: '📦 包裝、🌐 網站、📱 社群媒體、名片等各種場景',
+    reason: '陽光和麥穗直接傳達天然、健康、溫暖的品牌價值，與食品創業的核心概念契合',
+  });
+
+  // 概念 2: 極簡線條
+  concepts.push({
+    concept_name: '✨ 極簡線條',
+    description: '以簡單的線條勾勒出食材輪廓，呈現現代、專業的品牌風格',
+    visual_elements: {
+      icon: '🎯 幾何線條勾畫的食物輪廓（可用叉子、湯匙、碗等餐具形狀）',
+      color_palette: [
+        { color: '石墨黑', hex: '#2D3436', usage: '主色 - 專業、沉穩' },
+        { color: '鋼鐵灰', hex: '#636E72', usage: '輔色 - 現代感' },
+        { color: '活力紅', hex: '#E17055', usage: '強調色 - 刺激食慾' },
+      ],
+      typography: {
+        font_style: '🔤 簡潔有力的無襯線字體',
+        recommendations: 'Google Fonts: Noto Sans TC, Inter, 或 Source Han Sans',
+      },
+      layout: '📐 左圖右文或上圖下文，適合多種比例',
+    },
+    mockup_idea: '🏷️ 一個由線條組成的簡單碗或餐具圖案，旁邊放簡潔的品牌文字',
+    mood: '🎩 專業、現代、簡潔',
+    versatility: '💼 適合高端食材店、餐廳、烹飪課程等商業用途',
+    reason: '極簡設計傳達專業品質，線條元素讓人聯想到美食，適合追求品質感的品牌',
+  });
+
+  // 概念 3: 手繪溫度
+  concepts.push({
+    concept_name: '🎨 手繪溫度',
+    description: '手繪風格的插圖，傳達溫暖、親切、有溫度的品牌形象',
+    visual_elements: {
+      icon: '✏️ 手繪風格的食物插圖（水果、甜點、烹飪過程等）',
+      color_palette: [
+        { color: '柔粉色', hex: '#FDEDEE', usage: '主色 - 柔和、女性化' },
+        { color: '焦糖棕', hex: '#A0522D', usage: '輔色 - 溫暖、甜點感' },
+        { color: '薄荷綠', hex: '#98D8C8', usage: '強調色 - 清爽、點綴' },
+      ],
+      typography: {
+        font_style: '✍️ 手寫/手繪風格字體',
+        recommendations: 'Google Fonts: Ma Shan Zheng, ZCOOL XiaoWei, 或 Hanyi 華康手繪風',
+      },
+      layout: '📐 Logo 為主，文字為輔，手繪插圖可作為裝飾元素',
+    },
+    mockup_idea: '🏷️ 一個可愛的手繪草莓或甜點圖案，旁邊用圓潤的手寫字寫品牌名稱',
+    mood: '💕 溫馨、親切、少女心',
+    versatility: '🍰 甜點店、咖啡廳、烘焙產品、個人品牌',
+    reason: '手繪風格傳達溫暖和個人特色，適合想要建立親和形象的品牌',
+  });
+
+  // 概念 4: 幾何科技
+  concepts.push({
+    concept_name: '📐 幾何科技',
+    description: '使用幾何圖形和現代設計語言，傳達創新、科技感的品牌形象',
+    visual_elements: {
+      icon: '⬡ 由六邊形、三角形等幾何形狀組合的食物抽象圖案',
+      color_palette: [
+        { color: '科技藍', hex: '#0984E3', usage: '主色 - 專業、科技' },
+        { color: '未來紫', hex: '#6C5CE7', usage: '輔色 - 創新、年輕' },
+        { color: '霓虹綠', hex: '#00B894', usage: '強調色 - 活力、 growth' },
+      ],
+      typography: {
+        font_style: '🔷 幾何風格無襯線字體',
+        recommendations: 'Google Fonts: Orbitron, Rajdhani, 或 Fira Code',
+      },
+      layout: '📐 幾何圖案為視覺焦點，文字簡潔有力，適合數位應用',
+    },
+    mockup_idea: '🏷️ 一個由幾何圖形組成的抽象食物或AI晶片圖案，帶有科技感的漸層',
+    mood: '🚀 創新、前瞻、年輕',
+    versatility: '🤖 AI 食品服務、健康科技APP、生技產品',
+    reason: '幾何設計傳達精準和專業，適合結合科技的健康食品或AI相關服務',
+  });
+
+  // 概念 5: 自然物語
+  concepts.push({
+    concept_name: '🍃 自然物語',
+    description: '以植物葉片、花朵等自然元素為設計核心，強調天然有機的品牌理念',
+    visual_elements: {
+      icon: '🌿 葉片、花朵、果實等自然元素組成的圖案',
+      color_palette: [
+        { color: '森林綠', hex: '#27AE60', usage: '主色 - 自然、生機' },
+        { color: '大地棕', hex: '#8B7355', usage: '輔色 - 穩重、質樸' },
+        { color: '晨光橘', hex: '#F39C12', usage: '強調色 - 陽光、溫暖' },
+      ],
+      typography: {
+        font_style: '🌱 結合自然感的柔和字體',
+        recommendations: 'Google Fonts: Nunito, Quicksand, 或 文鼎圓體',
+      },
+      layout: '📐 自然元素環繞品牌名稱，或作為底部裝飾',
+    },
+    mockup_idea: '🏷️ 一片美麗的葉子輪廓包圍著品牌名稱，或葉子上放品牌首字母',
+    mood: '🌳 純淨、自然、環保',
+    versatility: '🌱 有機食品、天然產品、環保包裝、農業品牌',
+    reason: '自然元素直接傳達產品天然、健康的特性，適合有機或天然取向的品牌',
+  });
+
+  // 概念 6: 活力漸層
+  concepts.push({
+    concept_name: '🌈 活力漸層',
+    description: '使用現代漸層色彩，傳達年輕、活力、多元化的品牌形象',
+    visual_elements: {
+      icon: '💫 漸層色彩的食物圖案或抽象形狀',
+      color_palette: [
+        { color: '蜜桃粉', hex: '#FF7675', usage: '主色 - 甜美、活力' },
+        { color: '葡萄紫', hex: '#A29BFE', usage: '輔色 - 夢幻、創意' },
+        { color: '檸檬黃', hex: '#FFEAA7', usage: '強調色 - 陽光、歡樂' },
+      ],
+      typography: {
+        font_style: '📝 圓潤現代的無襯線字體',
+        recommendations: 'Google Fonts: Poppins, Nunito, 或 痞子邦奧運體',
+      },
+      layout: '📐 漸層圖案為背景或主視覺，文字清晰置於上方',
+    },
+    mockup_idea: '🏷️ 一個帶有粉色到紫色漸層的圓形或水滴圖案，裡面放品牌首字母',
+    mood: '🎉 年輕、活力、快樂',
+    versatility: '🎪 派對食品、休閒零食、網紅品牌、潮流產品',
+    reason: '漸層色彩傳達多元和活力，適合年輕族群的休閒食品或派對產品',
+  });
+
   return {
-    logo_concepts: [
-      {
-        concept_name: '陽光田野',
-        description: '以陽光和麥穗為核心視覺元素，傳達天然、健康、溫暖的品牌形象',
-        visual_elements: {
-          icon: '陽光圖案搭配麥穗線條',
-          color_palette: [
-            { color: '暖陽橙', hex: '#FF6B3D', usage: '主色' },
-            { color: '田野綠', hex: '#4DBF69', usage: '輔色' },
-            { color: '陽光黃', hex: '#FFD166', usage: '強調色' },
-          ],
-          typography: {
-            font_style: '溫暖圓潤的手寫風格',
-            recommendations: '可以使用 justloop、cinyalin 等字體',
-          },
-          layout: '水平排列時 Logo 在左、文字在右；垂直排列時 Logo 在上、文字在下',
-        },
-        mood: '溫暖、活力、自然',
-        versatility: '包裝、網站、社群媒體、名片等各種場景',
-        reason: '陽光和麥穗直接傳達天然、健康、溫暖的品牌價值，與食品創業的核心概念契合',
-      },
-    ],
+    logo_concepts: concepts,
+    // 根據用戶選擇動態生成色彩規範
     color_guidelines: {
-      primary: {
-        name: '暖陽橙',
-        hex: '#FF6B3D',
-        usage: 'Logo 主體、呼籲行動按鈕、裝飾元素',
-        psychology: '橙色代表活力、熱情、食慾，是食品品牌的絕佳選擇',
-      },
-      secondary: {
-        name: '田野綠',
-        hex: '#4DBF69',
-        usage: '輔助圖案、圖示、裝飾線條',
-        psychology: '綠色代表健康、天然、新鮮，傳達產品的品質保證',
-      },
-      accent: {
-        name: '陽光黃',
-        hex: '#FFD166',
-        usage: '強調元素、背景裝飾、重點資訊',
-        psychology: '黃色代表陽光、溫暖、愉悅，增加視覺層次感',
-      },
+      // 分析用戶的顏色偏好
+      primary: getPrimaryColor(colorPreference),
+      secondary: getSecondaryColor(colorPreference),
+      accent: getAccentColor(colorPreference),
+      color_tips: getColorTips(colorPreference),
     },
-    design_tips: '建議使用向量格式（如 SVG、AI）以確保各種尺寸的清晰度。確保 Logo 在單色模式下依然有良好的辨識度。',
-    do_and_dont: {
-      do: [
-        '保持簡單，避免過於複雜的細節',
-        '確保在不同尺寸下都清晰可讀',
-        '使用品牌色系保持一致性',
-      ],
-      dont: [
-        '避免使用過多顏色（建議不超過 4 種）',
-        '避免使用過於流行的設計元素（容易過時）',
-        '避免與知名品牌過於相似',
-      ],
+    design_tips: getDesignTips(preferredStyle, fontStyle),
+    do_and_dont: getDoAndDont(preferredStyle),
+  };
+}
+
+/**
+ * 根據風格偏好返回設計提示
+ */
+function getDesignTips(preferredStyle: string, fontStyle: string): string {
+  const tips: Record<string, string> = {
+    '可愛': '💡 設計提示：可愛風格適合使用圓潤的圖案和柔和的顏色。確保在小尺寸時依然可愛吸睛。可加入小巧思如表情符號或趣味元素。',
+    '專業': '💡 設計提示：專業風格要保持簡潔有力的視覺。建議使用幾何圖形和清晰的層次。確保文字在各種背景下都能清晰閱讀。',
+    '自然': '💡 設計提示：自然風格可融入植物葉片或手繪元素。建議使用大地色系並考慮環保材質的包裝設計。',
+    '時尚': '💡 設計提示：時尚風格要大膽實驗。可以使用漸層、幾何圖形或獨特的排版。確保在社群媒體上能夠突出。',
+    '復古': '💡 設計提示：復古風格可以使用懷舊的配色和經典的圖案。注意不要過於老氣，可以加入現代元素平衡。',
+    '極簡': '💡 設計提示：極簡風格講究「少即是多」。善用負空間，確保 Logo 在單色模式下依然有良好辨識度。',
+  };
+  
+  // 字體相關提示
+  const fontTips: Record<string, string> = {
+    '無襯線': ' → 字體建議：選擇幾何感的無襯線字體，如 Noto Sans TC 或 Inter，看起來現代且專業。',
+    '襯線': ' → 字體建議：襯線字體傳達經典和高級感，適合傳統或高端品牌。',
+    '手寫': ' → 字體建議：手寫字體增添溫度和親和力，適合個人品牌或手工產品。',
+    '幾何': ' → 字體建議：幾何字體強調結構和精確，適合科技或創新品牌。',
+    '粗體': ' → 字體建議：粗體字有力量感和親和力，適合大眾市場品牌。',
+    '細體': ' → 字體建議：細體字優雅精緻，適合高端或女性化品牌。',
+  };
+  
+  const styleTip = tips[preferredStyle] || tips['極簡'];
+  const fontTip = fontStyle ? (fontTips[fontStyle] || '') : '';
+  
+  return styleTip + fontTip;
+}
+
+/**
+ * 根據風格偏好返回建議與禁忌
+ */
+function getDoAndDont(preferredStyle: string) {
+  const commonDo = [
+    '✅ 保持簡單，避免過於複雜的細節',
+    '✅ 確保在不同尺寸下都清晰可讀',
+    '✅ 使用品牌色系保持一致性',
+  ];
+  
+  const commonDont = [
+    '❌ 避免使用過多顏色（建議不超過 4 種）',
+    '❌ 避免與知名品牌過於相似',
+  ];
+  
+  const styleSpecific: Record<string, { do: string[]; dont: string[] }> = {
+    '可愛': {
+      do: ['✅ 使用圓潤的邊角和柔和的曲線', '✅ 加入小巧思讓人會心一笑'],
+      dont: ['❌ 避免過於尖銳或男性的元素', '❌ 避免過於正式或沉重的氛圍'],
     },
+    '專業': {
+      do: ['✅ 保持視覺層次清晰', '✅ 使用精確的幾何形狀'],
+      dont: ['❌ 避免過於花俏的裝飾', '❌ 避免過於主觀或情緒化的設計'],
+    },
+    '自然': {
+      do: ['✅ 融入自然元素如葉子、果實', '✅ 使用大地色系'],
+      dont: ['❌ 避免過於機械或人造的圖形', '❌ 避免過於鮮豔的合成顏色'],
+    },
+    '時尚': {
+      do: ['✅ 大膽嘗試漸層和獨特配色', '✅ 保持前衛和獨特'],
+      dont: ['❌ 避免過於保守或無聊的設計', '❌ 避免過時的設計趨勢'],
+    },
+    '復古': {
+      do: ['✅ 使用經典配色和圖案元素', '✅ 加入懷舊情懷但保持現代感'],
+      dont: ['❌ 避免過於老舊或過時的感覺', '❌ 避免過度複雜的裝飾花紋'],
+    },
+    '極簡': {
+      do: ['✅ 善用負空間', '✅ 追求「少即是多」的哲學'],
+      dont: ['❌ 避免不必要的裝飾元素', '❌ 避免視覺過於空洞'],
+    },
+  };
+  
+  const specific = styleSpecific[preferredStyle] || styleSpecific['極簡'];
+  
+  return {
+    do: [...commonDo, ...specific.do],
+    dont: [...commonDont, ...specific.dont],
   };
 }
 
