@@ -610,12 +610,12 @@ function WishPool({ demands }: { demands: typeof mockData.demandCards }) {
 
         {/* View All Link */}
         <div className="text-center mt-8">
-          <button 
-            onClick={handleVote}
+          <Link 
+            href="/wishes"
             className="text-orange-600 font-medium hover:underline"
           >
             查看更多許願 →
-          </button>
+          </Link>
         </div>
       </div>
     </section>
