@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "huashu-nvwa": {
+      "source": "xmg2024/nvwa-skill",
+      "sourceType": "github",
+      "computedHash": "d207da398d7a9110124cb5f5a28f1ed69011c3ac04e2a7c2c077d04854095754"
+    }
+  }
+}
